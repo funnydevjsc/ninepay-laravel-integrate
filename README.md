@@ -44,11 +44,7 @@ If publishing files fails, please create corresponding files at the path `config
 
 #### Step 4. Update the various config settings in the published config file:
 
-After publishing the package assets a configuration file will be located at <code>config/ninepay.php</code>
-
-Please contact 9pay.vn to get those values to fill into the config file.
-
-Please note if you set the route_prefix to blank or null you will need to update the default <code>routes/web.php</code> file. All the crm routes are managed by the package, so it should look just as per below after removing the default welcome route and redirecting the default /home route to the dashboard.
+After publishing the package assets a configuration file will be located at <code>config/ninepay.php</code>. Please contact 9pay.vn to get those values to fill into the config file.
 
 #### Step 5. Add middleware protection:
 
