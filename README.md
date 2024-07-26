@@ -68,7 +68,7 @@ class Kernel extends HttpKernel
      */
     protected $routeMiddleware = [
         // Other middlewares...
-         'ninepay' => 'FunnyDev\Ninepay\Http\Middleware\NinepayMiddleware',
+         'ninepay' => 'App\Http\Middleware\NinepayMiddleware',
     ];
 }
 ```

@@ -2,6 +2,7 @@
 
 namespace FunnyDev\Ninepay;
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 
 class NinepaySdk
@@ -37,7 +38,7 @@ class NinepaySdk
     }
 
     private function getConfigValue($value, $configKey) {
-        return $value ? $value : config('ninepay.'.$configKey);
+        return $value ? $value : Config::get('ninepay.'.$configKey);
     }
 
     public function convert_array($data): array
