@@ -3,6 +3,7 @@
 namespace FunnyDev\Ninepay;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 
 class NinepaySdk
@@ -30,7 +31,7 @@ class NinepaySdk
                 'method' => 'POST',
                 'url' => '/payments/create'
             ],
-            'get_inquiry'  => [
+            'check_payment'  => [
                 'method' => 'GET',
                 'url' => '/v2/payments/invoice_code/inquire'
             ]
@@ -156,10 +157,14 @@ class NinepaySdk
     public function signature(array $data, string $method='POST', string $url='', string $return_url=''): string
     {
         $response = $method . "\n" . $url . "\n" . strval(time()) . "\n";
-        foreach ($data as $c => $v) {
-            $response .= $c."=".$v."&";
+        if (!empty($data)) {
+            foreach ($data as $c => $v) {
+                $response .= $c . "=" . $v . "&";
+            }
         }
-        $response .= "return_url=".$return_url;
+        if ($return_url) {
+            $response .= "return_url=" . $return_url;
+        }
         return $response;
     }
 
@@ -183,7 +188,7 @@ class NinepaySdk
             'message' => 'Unknown error',
             'description' => ''
         ];
-        if (isset($message) && isset($sum)) {
+        if (!empty($message) && !empty($sum)) {
             if ($this->verify_result($sum, $message)) {
                 $data = $this->convert_array(base64_decode($message));
                 if ($data['status'] == 5) {
@@ -193,15 +198,12 @@ class NinepaySdk
                 } else {
                     $failed = Session::get('ninepay_failed') ? Session::get('ninepay_failed') + 1 : 1;
                     Session::put('ninepay_failed', $failed);
-                    if ($data['status'] == 8) {
-                        $result['message'] = 'Your payment has been cancelled';
-                    } elseif ($data['status'] == 6) {
-                        $result['message'] = 'Your payment has been failed';
-                    } elseif ($data['status'] == 15) {
-                        $result['message'] = 'Your payment was expired';
-                    } else {
-                        $result['message'] = 'Your payment is waiting for process';
-                    }
+                    $result['message'] = match ($data['status']) {
+                        8 => 'Your payment has been cancelled',
+                        6 => 'Your payment has been failed',
+                        15 => 'Your payment was expired',
+                        default => 'Your payment is waiting for process',
+                    };
                 }
             } else {
                 $hacked = Session::get('ninepay_hacked') ? Session::get('ninepay_hacked') + 1 : 1;
@@ -235,5 +237,44 @@ class NinepaySdk
         ];
         return $this->server . '/portal?' . http_build_query($httpData);
     }
-    
+
+    public function check_payment(string $invoice_number): array
+    {
+        $result = [
+            'status' => false,
+            'amount' => 0,
+            'message' => 'Unknown error',
+            'description' => ''
+        ];
+        try {
+            $time = time();
+            $url = str_replace('invoice_code', $invoice_number, $this->server . $this->url['check_payment']['url']);
+            $message = NinepaySdk::instance($this->merchant, $this->secret, $this->sum, $this->server)
+                ->with($time, $url, $this->url['check_payment']['method'])
+                ->withParams([])
+                ->build();
+            $signature = $this->encrypt_data($message);
+            $headers = [
+                'Authorization' => 'Signature Algorithm=HS256,Credential=' . $this->merchant . ',SignedHeaders=,Signature=' . $signature,
+                'Date' => $time,
+            ];
+            $response = Http::withHeaders($headers)->timeout(10)->get(str_replace('invoice_code', $invoice_number, $this->server . $this->url['check_payment']['url']));
+            $data = $response->json();
+            if ($data['status'] == 5) {
+                $result['description'] = $data['description'];
+                $result['status'] = true;
+                $result['message'] = 'Payment success. Please wait up to 5 minutes for getting your invoice ready';
+            } else {
+                $failed = Session::get('ninepay_failed') ? Session::get('ninepay_failed') + 1 : 1;
+                Session::put('ninepay_failed', $failed);
+                $result['message'] = match ($data['status']) {
+                    8 => 'Your payment has been cancelled',
+                    6 => 'Your payment has been failed',
+                    15 => 'Your payment was expired',
+                    default => 'Your payment is waiting for process',
+                };
+            }
+        } catch (\Exception) {}
+        return $result;
+    }
 }
