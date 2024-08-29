@@ -264,7 +264,7 @@ class NinepaySdk
                 $result['description'] = $data['description'];
                 $result['status'] = true;
                 $result['amount'] = $data['amount'];
-                $result['message'] = 'Payment successfully from Cryptomus';
+                $result['message'] = 'Payment successfully from 9Pay';
             } else {
                 $failed = Session::get('ninepay_failed') ? Session::get('ninepay_failed') + 1 : 1;
                 Session::put('ninepay_failed', $failed);
