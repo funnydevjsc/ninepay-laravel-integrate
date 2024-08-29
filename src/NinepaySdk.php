@@ -264,7 +264,7 @@ class NinepaySdk
                 $result['description'] = $data['description'];
                 $result['status'] = true;
                 $result['amount'] = $data['amount'];
-                $result['message'] = 'Payment success. Please wait up to 5 minutes for getting your invoice ready';
+                $result['message'] = 'Payment successfully from Cryptomus';
             } else {
                 $failed = Session::get('ninepay_failed') ? Session::get('ninepay_failed') + 1 : 1;
                 Session::put('ninepay_failed', $failed);
