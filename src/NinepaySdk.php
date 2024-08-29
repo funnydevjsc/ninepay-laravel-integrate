@@ -263,6 +263,7 @@ class NinepaySdk
             if ($data['status'] == 5) {
                 $result['description'] = $data['description'];
                 $result['status'] = true;
+                $result['amount'] = $data['amount'];
                 $result['message'] = 'Payment success. Please wait up to 5 minutes for getting your invoice ready';
             } else {
                 $failed = Session::get('ninepay_failed') ? Session::get('ninepay_failed') + 1 : 1;
